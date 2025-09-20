@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Quản lý Đặt thiết bị</h2>
+    <a href="{% url 'facility_list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-plus-circle"></i> Đặt thiết bị mới
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="status" class="form-label">Lọc theo trạng thái</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Tất cả</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Lọc</button>
+                <a href="{% url 'booking_list' %}" class="btn btn-outline-secondary">Xóa lọc</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Thiết bị</th>
+                <th>Người đặt</th>
+                <th>Thời gian bắt đầu</th>
+                <th>Thời gian kết thúc</th>
+                <th>Mục đích</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td>{{ booking.facility.name }}</td>
+                <td>{{ booking.requester.username }}</td>
+                <td>{{ booking.start_time|date:"d/m/Y H:i" }}</td>
+                <td>{{ booking.end_time|date:"d/m/Y H:i" }}</td>
+                <td>{{ booking.purpose|truncatewords:5 }}</td>
+                <td>
+                    <span class="badge 
+                        {% if booking.status == 'approved' %}bg-success
+                        {% elif booking.status == 'pending' %}bg-warning
+                        {% elif booking.status == 'rejected' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ booking.get_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" 
+                                data-bs-target="#detailModal{{ booking.id }}">
+                            Chi tiết
+                        </button>
+                        {% if perms.facilities.change_booking %}
+                            {% if booking.status == 'pending' %}
+                            <a href="{% url 'booking_approve' booking.id %}" class="btn btn-success">Duyệt</a>
+                            <a href="{% url 'booking_reject' booking.id %}" class="btn btn-danger">Từ chối</a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Modal -->
+                    <div class="modal fade" id="detailModal{{ booking.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Chi tiết đặt thiết bị</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Thiết bị:</strong> {{ booking.facility.name }}</p>
+                                    <p><strong>Người đặt:</strong> {{ booking.requester.get_full_name|default:booking.requester.username }}</p>
+                                    <p><strong>Thời gian:</strong> {{ booking.start_time|date:"d/m/Y H:i" }} - {{ booking.end_time|date:"d/m/Y H:i" }}</p>
+                                    <p><strong>Mục đích:</strong> {{ booking.purpose }}</p>
+                                    <p><strong>Trạng thái:</strong> {{ booking.get_status_display }}</p>
+                                    <p><strong>Ngày tạo:</strong> {{ booking.created_at|date:"d/m/Y H:i" }}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">Chưa có yêu cầu đặt thiết bị nào.</div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

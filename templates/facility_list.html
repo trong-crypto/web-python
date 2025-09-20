@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Danh sách Thiết bị</h2>
+    {% if perms.facilities.add_facility %}
+    <a href="{% url 'facility_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Thêm thiết bị
+    </a>
+    {% endif %}
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Tìm kiếm</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ request.GET.search }}" placeholder="Tên thiết bị, serial...">
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">Trạng thái</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Tất cả</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Lọc</button>
+                <a href="{% url 'facility_list' %}" class="btn btn-outline-secondary">Xóa lọc</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    {% for facility in facilities %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            {% if facility.image %}
+            <img src="{{ facility.image.url }}" class="card-img-top" alt="{{ facility.name }}" style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="text-center py-5 bg-light">
+                <i class="bi bi-image display-4 text-muted"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ facility.name }}</h5>
+                <p class="card-text">
+                    <strong>Serial:</strong> {{ facility.serial_number }}<br>
+                    <strong>Danh mục:</strong> {{ facility.category.name }}<br>
+                    <strong>Trạng thái:</strong> 
+                    <span class="badge 
+                        {% if facility.status == 'available' %}bg-success
+                        {% elif facility.status == 'in_use' %}bg-primary
+                        {% elif facility.status == 'maintenance' %}bg-warning
+                        {% else %}bg-danger{% endif %}">
+                        {{ facility.get_status_display }}
+                    </span><br>
+                    {% if facility.room %}
+                    <strong>Vị trí:</strong> {{ facility.room }}<br>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'facility_detail' facility.id %}" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                {% if perms.facilities.change_facility %}
+                <a href="{% url 'facility_edit' facility.id %}" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                {% endif %}
+                {% if user.is_authenticated and facility.status == 'available' %}
+                <a href="{% url 'booking_create' facility.id %}" class="btn btn-sm btn-success">Đặt thiết bị</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            Không có thiết bị nào được tìm thấy.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
